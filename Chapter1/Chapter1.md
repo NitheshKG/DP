@@ -151,9 +151,11 @@ ip's are used for the security as from the load balancer it reacher the servers 
 
 - Flow : read-through cache
 
-    1. Web server once getting a request checks if the cache has the available response.
-    2. If it has it sends them flow ends if not
-    3. Web server process the request stores to the cache and send back to the client
+    1. User sends in a request and then the request is passed on to the Application
+    2. Application check if the response is already available in the cache
+    3. If the response is available it returns back from the cache, if not
+    4. It procees the request and it stores the response in the cache
+    5. Then it sends the response to the user, next time if the user requests for the same data then application fetches the result from the cache
 
 
 ### Caching strategies :-
@@ -169,3 +171,85 @@ ip's are used for the security as from the load balancer it reacher the servers 
 | **Distributed Cache**          | Shared cache across multiple servers                          | Scaled microservices             | Shared state, scalable                       | Network overhead                            | Uses tools like Redis          |
 | **Local/In-Memory Cache**      | Cache stored in app memory                                    | Single-server ultra-fast systems | Extremely fast                               | Not shared across servers                   | Example: Python dict           |
 | **CDN Cache**                  | Static files cached near users globally                       | Images, CSS, videos              | Global low latency                           | Invalidation complexity                     | Uses providers like Cloudflare |
+
+
+### Considerations for using cache :-
+
+- Data read frequently and modified infrequently
+
+- Expiration policy: Once cached data is expired it is removed from the cache
+
+- Consistency: Keeping the data store and cache in synk
+
+- Mitigating Failures: SPOF(Single point of failure) if it fails will stop the entire system from working. Multiple cache servers across different data centers are recommended to avoid SPOF
+
+- Eviction Policy: Once the cache is full, any requests to add items to the cache mighe cause existing items to be removed. LRU(Least Recently Used) is the most popular cache eviction policy. There are others also LFU(Least Frequently Used) or FIFO
+
+### CDN (Content Delivery Network) :-
+
+- Geographically dispersed servers used to deliver static content. CDN servers caches the static content like images, videos, CSS, JS files etc
+
+- Dynamic content caching caches the entire HTML pages that are based on the request path, query string, cookies and request headers
+
+- Base Flow: 
+
+    1. User visits a website
+    2. CDN server colosest to the user will deliver the static content.
+    3. if the users are furhter from the CDN servers the slower the website loads
+
+- Adv Flow:
+
+    1. User A tries to get the image.png by using an image URL. URL domain is provided by the CDN provider. Example below
+
+        - https://mysite.cloudfront.net/logo.png
+        - https://mysite.akamai.com/image-manager/img/logo.png
+    2. CDN dont hav ethe image.png in the cachce the CDN server requests for the file from the origin which can be a webserver or S3
+    3. Origin returns image.png to the CDN servers, which includes optional HTTP Header TTL(Time-to-live) which desribes how long image is cached
+    4. CDN caches the umage and returns it to User A. Image remains cached in the CDN until TTL expires
+    5. User B sends request to get the image
+    6. Image is returend from the cache until the TTL is not expired
+
+### Considerations of using CDN :-
+
+- Cost: CDN's are run by the third-party providers we are charged for data transfers in and out of the CDN. Caching infrequently used assets provides no significant benefits which results in cost so we need to opt it from moving out.
+
+- CDN Fallback: If there is a CDN failure then clients should be able to detect the problem and request resources from the origin.
+
+- Invalidating files: We can remove the file from the CDN before it expires
+
+
+### Stateful architecture :-
+
+- Server remembers the previous interactions with the client
+
+- Flow:
+
+    1. User A sends a request to the server 1 to authenticate the user A
+    2. HTTP requests should be routed to the server 1
+    3. If the request is sent to the other servers then the authentication will fail since it does not contain the session data
+    4. Similarly all requests from the User B will be routed to the Server2 and the same for the User C
+
+- Client Request → Server → Response
+(Server checks stored session/state)
+
+- Example: Traditional web applications
+
+    1. User logs in
+    2. Server creates a session in the memory/DB
+    3. Client gets a cookie/Session ID
+    4. Future transactions requests use the session ID
+    5. Server retrieves stored session data
+
+- Stateful → Phone Call
+
+    During a call:
+
+    * Conversation context is maintained
+    * Both parties remember previous messages
+    * Connection/session stays active
+
+### Stateless Architecture :-
+
+- Server doesn't remember anything about the previous interactions with the client
+
+- 
